@@ -1,5 +1,6 @@
 import re
 import socket
+from sys import exit
 
 
 class IRC:
@@ -14,30 +15,35 @@ class IRC:
             self.sock.settimeout(30)
             if self.conf.verbose:
                 print('Attempting to connect to', destination)
-            self.sock.connect(self.conf.server, self.conf.port)
+            self.sock.connect((self.conf.server, self.conf.port))
         except Exception as e:
             if self.conf.verbose:
                 print('Failed to connect to', destination)
-            raise e
+            exit(1)
         if self.conf.verbose:
             print('Connected to', destination)
         self.sock.settimeout(None)
         return self.sock
 
     def is_logged(self, response):
-        if re.match(r'^:(testserver\.local|tmi\.twitch\.tv) NOTICE \* :Login unsuccessful\r\n$', response):
+        response = response.decode('UTF-8')
+        print(response)
+        if 'Login unsuccessful' in response:
             return False
         return True
 
+    def serialize(self, string):
+        return bytes(string, 'UTF-8')
+
     def auth(self):
-        self.sock.send('USER {0}\r\n'.format(self.conf.username))
         if self.conf.auth_type == 'token':
-            self.sock.send('PASSWORD {0}\r\n'.format(self.conf.token))
+            self.sock.send(self.serialize('PASS {0}\r\n'.format(self.conf.token)))
         elif self.conf.auth_type == 'simple':
-            self.sock.send('PASSWORD {0}\r\n'.format(self.conf.password))
+            self.sock.send(self.serialize('USER {0}\n'.format(self.conf.username)))
+            self.sock.send(self.serialize('PASS {0}\r\n'.format(self.conf.password)))
         else:
             raise ValueError('Invalid setting for auth_type')
-        self.sock.send('NICK {0}\r\n'.format(self.conf.username))
+        self.sock.send(self.serialize('NICK {0}\r\n'.format(self.conf.username)))
         response = self.sock.recv(1024)
         if self.is_logged(response):
             print('Successful auth!')
