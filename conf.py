@@ -7,7 +7,7 @@ class MissingSettingException(Exception):
     pass
 
 
-class Config(object):
+class Config:
 
     def __init__(self, **kwargs):
         self.defaults = kwargs
