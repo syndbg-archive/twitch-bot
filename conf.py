@@ -18,6 +18,7 @@ class Config:
         except Exception:
             if name not in self.defaults:
                 raise MissingSettingException('Missing setting {}'.format(name))
+            return self.defaults[name]
 
 
 def pretty_logfile(date):
